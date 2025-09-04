@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nutritional Info</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Plugin for % inside pie chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      text-align: center;
+      padding: 30px;
+    }
+    h1 {
+      color: #333;
+    }
+    input {
+      padding: 10px;
+      width: 250px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      margin-left: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #4caf50;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .result {
+      margin-top: 30px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+      display: inline-block;
+      text-align: left;
+      max-width: 500px;
+    }
+    #nutritionChart {
+      margin-top: 20px;
+    }
+    .healthy {
+      color: green;
+      font-weight: bold;
+    }
+    .unhealthy {
+      color: red;
+      font-weight: bold;
+    }
+    .moderate {
+      color: orange;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍴 Nutritional Info</h1>
+  <input type="text" id="foodInput" placeholder="Enter food name (e.g., Apple)">
+  <button onclick="getNutrition()">Check</button>
+
+  <div class="result" id="resultBox" style="display:none;">
+    <h2 id="foodName"></h2>
+    <p><strong>Calories:</strong> <span id="calories"></span></p>
+    <canvas id="nutritionChart" width="300" height="300"></canvas>
+    <p id="healthStatus"></p>
+    <p id="foodDescription"></p>
+  </div>
+
+  <script>
+    let nutritionChart = null;
+
+    // ✅ Food dataset with descriptions
+    const sampleFoods = {
+      "apple": {calories: 95, protein: 0.5, fat: 0.3, carbs: 25, desc: "Apples are rich in fiber and vitamin C, generally very healthy."},
+      "banana": {calories: 105, protein: 1.3, fat: 0.3, carbs: 27, desc: "Bananas are a quick source of energy, high in potassium."},
+      "chicken": {calories: 335, protein: 25, fat: 20, carbs: 0, desc: "Chicken is a great protein source, healthy when grilled or boiled."},
+      "chocolate": {calories: 546, protein: 7.8, fat: 31, carbs: 61, desc: "Chocolate is tasty but high in sugar and fat – eat in moderation."},
+      "rice": {calories: 206, protein: 4.3, fat: 0.4, carbs: 45, desc: "Rice is a staple food, high in carbs. Healthy when eaten in balance."},
+      "burger": {calories: 354, protein: 17, fat: 17, carbs: 29, desc: "Burgers are high in fat and calories, not ideal for daily health."},
+      "orange": {calories: 62, protein: 1.2, fat: 0.2, carbs: 15, desc: "Oranges are rich in vitamin C and boost immunity."},
+      "egg": {calories: 78, protein: 6, fat: 5, carbs: 0.6, desc: "Eggs are packed with protein and essential vitamins."},
+      "milk": {calories: 149, protein: 7.7, fat: 8, carbs: 12, desc: "Milk is a good source of calcium and protein."},
+      "pizza": {calories: 285, protein: 12, fat: 10, carbs: 36, desc: "Pizza is tasty but often high in fat and refined carbs."},
+      "ice cream": {calories: 207, protein: 3.5, fat: 11, carbs: 24, desc: "Ice cream is sweet and refreshing but high in sugar and fat."},
+      "dal": {calories: 116, protein: 9, fat: 0.4, carbs: 20, desc: "Dal (lentils) is a great source of protein, fiber, and nutrients."},
+      "biryani": {calories: 290, protein: 12, fat: 9, carbs: 40, desc: "Biryani is delicious but usually high in oil and calories."},
+      "roti": {calories: 120, protein: 3, fat: 3, carbs: 20, desc: "Roti (whole wheat bread) is healthy and a good source of carbs and fiber."}
+    };
+
+    function getNutrition() {
+      const food = document.getElementById("foodInput").value.trim().toLowerCase();
+      if (!food) {
+        alert("Please enter a food name!");
+        return;
+      }
+
+      const data = sampleFoods[food];
+      if (!data) {
+        alert("Demo only: Try Apple, Banana, Chicken, Rice, Chocolate, Burger, Orange, Egg, Milk, Pizza, Ice Cream, Dal, Biryani, Roti");
+        return;
+      }
+
+      document.getElementById("resultBox").style.display = "block";
+      document.getElementById("foodName").innerText = food.charAt(0).toUpperCase() + food.slice(1);
+      document.getElementById("calories").innerText = data.calories + " kcal";
+
+      const ctx = document.getElementById("nutritionChart").getContext("2d");
+
+      if (nutritionChart) {
+        nutritionChart.destroy();
+      }
+
+      const values = [data.protein, data.fat, data.carbs];
+      const total = values.reduce((a, b) => a + b, 0);
+
+      nutritionChart = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: ["Protein", "Fat", "Carbs"],
+          datasets: [{
+            data: values,
+            backgroundColor: ["#36A2EB", "#FF6384", "#FFCE56"]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "bottom" },
+            datalabels: {
+              formatter: (value) => ((value / total) * 100).toFixed(1) + "%",
+              color: "black",   // ✅ percentage font color black
+              font: { weight: "bold", size: 14 }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      // ✅ Health check
+      let healthText = "";
+      if (data.calories < 200 && data.fat < 10) {
+        healthText = "✅ This food is healthy and low in calories.";
+        document.getElementById("healthStatus").className = "healthy";
+      } else if (data.calories > 500 || data.fat > 20) {
+        healthText = "⚠️ High in calories/fat. Not very healthy.";
+        document.getElementById("healthStatus").className = "unhealthy";
+      } else {
+        healthText = "🙂 This food is moderate, eat in balance.";
+        document.getElementById("healthStatus").className = "moderate";
+      }
+      document.getElementById("healthStatus").innerText = healthText;
+
+      // ✅ Food description
+      document.getElementById("foodDescription").innerText = data.desc;
+    }
+  </script>
+</body>
+</html>
